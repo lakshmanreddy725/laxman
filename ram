@@ -1,0 +1,56 @@
+---
+- name: Inmemory Inventory Group
+  hosts: localhost
+  #connection: local
+  gather_facts: no
+  ignore_errors: yes
+  tasks:
+  - name: Create an inmemory inventory group
+    add_host:								# module for creating new hosts and groups in inventory for use in later plays of the same playbook				
+      hostname: "{{ botrunner }}"			# The hostname/ip of the host to add to the inventory						
+      ansible_connection: psrp				# type of connection									
+      ansible_psrp_auth: ntlm				# type of authentication			
+      ansible_port: 5985					# port number					
+      ansible_psrp_cert_validation: ignore	# ignore certification validation				
+      ansible_psrp_ignore_proxy: yes		# ignore proxy 			
+      ansible_psrp_negotiate_delegate: true						
+      groups: Bot_AAMaintenance				# group name
+    no_log: true							# disable ansible log
+    tags: debug_bot
+  
+  - name: Hostname Added
+    debug:
+      msg: "{{ botrunner }}"
+    tags: debug_bot
+  
+
+     
+  #- name: Debug bot info
+  #  win_copy:
+  #    dest: C:\temp\bot_fetchlog.txt
+  #    content: "{{ lookup('env', 'BOT_PASSWORD') }}"
+  #  tags: debug_bot
+   
+
+
+- name: AutomationAnywhere BotRunner Auto Re-Connect
+  hosts: Bot_AAMaintenance
+  ignore_errors: yes
+  ignore_unreachable: yes 
+  gather_facts: no
+  tasks:
+    - block:
+        - name: Auto healing
+          include_role:
+            name: "{{ item }}"
+          with_items:
+              - fetch_aa_bot
+    #         - incident-initial-assesment								# collect Sys_ID and check the BotRunner connectivity 
+    #         - incident-inprogress									# mark incident in work-inprogress
+    #         - incident-heal-agent							# slef-heal, reconnet BotRunner to Control_Room
+    #         - incident-final-update            # resolve incident
+    #         #- fetch_aa_bot         
+    #  rescue:
+    #    - name: Rescue operation
+    #      include_role:
+    #        name: incident-rescue								# BotRunner connectivity fails and update the incident
